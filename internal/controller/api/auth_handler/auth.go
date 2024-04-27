@@ -45,6 +45,7 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 	}
 
 	jwt, err := ah.authServ.Login(c, loginInput)
+
 	c.String(http.StatusOK, jwt)
 }
 

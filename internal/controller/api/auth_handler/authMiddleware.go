@@ -2,6 +2,7 @@ package auth_handler
 
 import (
 	"context"
+	"errors"
 	"github.com/achillescres/pkg/gin/ginresponse"
 	"github.com/gin-gonic/gin"
 	"itamconnect/ent"
@@ -11,8 +12,9 @@ import (
 const authorization = "authorization"
 
 func (ah *AuthHandler) AuthorizationMiddleware(c *gin.Context) {
-	jwt, err := c.Cookie("Access")
-	if err != nil {
+	jwt := c.GetHeader("Access")
+	if jwt == "" {
+		err := errors.New("no access header")
 		ah.log.Errorln(err)
 		ginresponse.ErrorString(c, http.StatusUnprocessableEntity, err, "need Access cookie to check")
 		return
