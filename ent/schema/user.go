@@ -32,6 +32,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("real_experiences", RealExperience.Type),
 		edge.To("menti", Menti.Type).Unique(),
 		edge.To("mentor", Mentor.Type).Unique(),
-		edge.To("skills", Skill.Type).Required(),
+		edge.To("skills", Skill.Type),
 	}
 }
