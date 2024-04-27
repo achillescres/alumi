@@ -48,6 +48,10 @@ func main() {
 		logger.Fatalf("connect ent to postgres: %s\n", err)
 	}
 
+	if err := entClient.Schema.Create(ctx); err != nil {
+		logger.Fatalf("failed migrating schema: %s", err)
+	}
+
 	hasher := passlib.NewHashManager("salt1")
 	jwtManager := ajwt.NewJWTManager(hasher, "superSecretKey", time.Minute*60*2, time.Minute*60*12)
 
