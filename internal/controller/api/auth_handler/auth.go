@@ -49,5 +49,6 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 }
 
 func (ah *AuthHandler) Check(c *gin.Context) {
-
+	u, _ := GetUser(c)
+	c.JSON(http.StatusOK, u)
 }
