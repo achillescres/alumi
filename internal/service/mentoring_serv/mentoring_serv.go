@@ -16,6 +16,8 @@ type SearchMentorsOpts struct {
 
 type MentoringService interface {
 	GetMentors(ctx context.Context, opts SearchMentorsOpts) ([]*ent.User, error)
+	Request(ctx context.Context, mentiID, mentorID int) error
+	SolveMatch(cx context.Context, mentorID, requestID int, accept bool) error
 }
 
 type mentoringService struct {
@@ -45,4 +47,42 @@ func (m *mentoringService) GetMentors(ctx context.Context, opts SearchMentorsOpt
 	}
 
 	return mentors, nil
+}
+
+func (m *mentoringService) Request(ctx context.Context, mentiID, mentorID int) error {
+	ew := utils.NewErrorWrapper("mentoringService - Request")
+
+	_, err := m.c.Match.Create().
+		SetMentiID(mentiID).
+		SetMentorID(mentorID).
+		SetStatus(valueobject.MatchStatusPending).
+		Save(ctx)
+	if err != nil {
+		return ew(fmt.Errorf("create match: %w", err))
+	}
+
+	return nil
+}
+
+func (m *mentoringService) SolveMatch(ctx context.Context, mentorID, matchID int, accept bool) error {
+	ew := utils.NewErrorWrapper("mentoringService - SolveMatch")
+
+	acceptMatch, err := m.c.Match.Get(ctx, matchID)
+	if err != nil {
+		return ew(fmt.Errorf("get match: %w", err))
+	}
+	if acceptMatch.MentorID != mentorID {
+		return ew(fmt.Errorf("unauthorized mentor"))
+	}
+
+	var newStatus = valueobject.MatchStatusAccepted
+	if !accept {
+		newStatus = valueobject.MatchStatusDeclined
+	}
+	_, err = acceptMatch.Update().SetStatus(newStatus).Save(ctx)
+	if err != nil {
+		return ew(fmt.Errorf("update match status to accepted: %w", err))
+	}
+
+	return nil
 }
