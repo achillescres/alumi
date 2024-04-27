@@ -51,10 +51,5 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 
 func (ah *AuthHandler) Check(c *gin.Context) {
 	u, _ := GetUser(c)
-	u.Edges.Mentor, _ = u.QueryMentor().Only(c)
-	u.Edges.Menti, _ = u.QueryMenti().Only(c)
-	u.Edges.Skills, _ = u.QuerySkills().All(c)
-	u.Edges.RealExperiences, _ = u.QueryRealExperiences().All(c)
-
 	c.JSON(http.StatusOK, u)
 }

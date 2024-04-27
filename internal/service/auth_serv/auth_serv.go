@@ -27,7 +27,7 @@ func (a *Auth) Check(ctx context.Context, jwt string) (*ent.User, error) {
 	if err != nil {
 		return nil, ew(fmt.Errorf("parse user from jwt: %w", err))
 	}
-	u, err := a.c.User.Query().Where(user.Login(jwtClaims.Login)).Only(ctx)
+	u, err := a.c.User.Query().Where(user.Login(jwtClaims.Login)).WithMentor().WithMenti().WithSkills().WithRealExperiences().Only(ctx)
 	if err != nil {
 		return nil, ew(fmt.Errorf("query user: %w", err))
 	}
