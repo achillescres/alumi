@@ -16,6 +16,8 @@ import (
 	"itamconnect/ent/mentor"
 	"itamconnect/ent/message"
 	"itamconnect/ent/realexperience"
+	"itamconnect/ent/roadmap"
+	"itamconnect/ent/skill"
 	"itamconnect/ent/user"
 
 	"entgo.io/ent"
@@ -41,6 +43,10 @@ type Client struct {
 	Message *MessageClient
 	// RealExperience is the client for interacting with the RealExperience builders.
 	RealExperience *RealExperienceClient
+	// RoadMap is the client for interacting with the RoadMap builders.
+	RoadMap *RoadMapClient
+	// Skill is the client for interacting with the Skill builders.
+	Skill *SkillClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -59,6 +65,8 @@ func (c *Client) init() {
 	c.Mentor = NewMentorClient(c.config)
 	c.Message = NewMessageClient(c.config)
 	c.RealExperience = NewRealExperienceClient(c.config)
+	c.RoadMap = NewRoadMapClient(c.config)
+	c.Skill = NewSkillClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -159,6 +167,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Mentor:         NewMentorClient(cfg),
 		Message:        NewMessageClient(cfg),
 		RealExperience: NewRealExperienceClient(cfg),
+		RoadMap:        NewRoadMapClient(cfg),
+		Skill:          NewSkillClient(cfg),
 		User:           NewUserClient(cfg),
 	}, nil
 }
@@ -184,6 +194,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Mentor:         NewMentorClient(cfg),
 		Message:        NewMessageClient(cfg),
 		RealExperience: NewRealExperienceClient(cfg),
+		RoadMap:        NewRoadMapClient(cfg),
+		Skill:          NewSkillClient(cfg),
 		User:           NewUserClient(cfg),
 	}, nil
 }
@@ -214,7 +226,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Match, c.Menti, c.Mentor, c.Message, c.RealExperience, c.User,
+		c.Match, c.Menti, c.Mentor, c.Message, c.RealExperience, c.RoadMap, c.Skill,
+		c.User,
 	} {
 		n.Use(hooks...)
 	}
@@ -224,7 +237,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Match, c.Menti, c.Mentor, c.Message, c.RealExperience, c.User,
+		c.Match, c.Menti, c.Mentor, c.Message, c.RealExperience, c.RoadMap, c.Skill,
+		c.User,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -243,6 +257,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Message.mutate(ctx, m)
 	case *RealExperienceMutation:
 		return c.RealExperience.mutate(ctx, m)
+	case *RoadMapMutation:
+		return c.RoadMap.mutate(ctx, m)
+	case *SkillMutation:
+		return c.Skill.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -1124,6 +1142,310 @@ func (c *RealExperienceClient) mutate(ctx context.Context, m *RealExperienceMuta
 	}
 }
 
+// RoadMapClient is a client for the RoadMap schema.
+type RoadMapClient struct {
+	config
+}
+
+// NewRoadMapClient returns a client for the RoadMap from the given config.
+func NewRoadMapClient(c config) *RoadMapClient {
+	return &RoadMapClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `roadmap.Hooks(f(g(h())))`.
+func (c *RoadMapClient) Use(hooks ...Hook) {
+	c.hooks.RoadMap = append(c.hooks.RoadMap, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `roadmap.Intercept(f(g(h())))`.
+func (c *RoadMapClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RoadMap = append(c.inters.RoadMap, interceptors...)
+}
+
+// Create returns a builder for creating a RoadMap entity.
+func (c *RoadMapClient) Create() *RoadMapCreate {
+	mutation := newRoadMapMutation(c.config, OpCreate)
+	return &RoadMapCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RoadMap entities.
+func (c *RoadMapClient) CreateBulk(builders ...*RoadMapCreate) *RoadMapCreateBulk {
+	return &RoadMapCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RoadMapClient) MapCreateBulk(slice any, setFunc func(*RoadMapCreate, int)) *RoadMapCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RoadMapCreateBulk{err: fmt.Errorf("calling to RoadMapClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RoadMapCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RoadMapCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RoadMap.
+func (c *RoadMapClient) Update() *RoadMapUpdate {
+	mutation := newRoadMapMutation(c.config, OpUpdate)
+	return &RoadMapUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RoadMapClient) UpdateOne(rm *RoadMap) *RoadMapUpdateOne {
+	mutation := newRoadMapMutation(c.config, OpUpdateOne, withRoadMap(rm))
+	return &RoadMapUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RoadMapClient) UpdateOneID(id int) *RoadMapUpdateOne {
+	mutation := newRoadMapMutation(c.config, OpUpdateOne, withRoadMapID(id))
+	return &RoadMapUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RoadMap.
+func (c *RoadMapClient) Delete() *RoadMapDelete {
+	mutation := newRoadMapMutation(c.config, OpDelete)
+	return &RoadMapDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RoadMapClient) DeleteOne(rm *RoadMap) *RoadMapDeleteOne {
+	return c.DeleteOneID(rm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RoadMapClient) DeleteOneID(id int) *RoadMapDeleteOne {
+	builder := c.Delete().Where(roadmap.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RoadMapDeleteOne{builder}
+}
+
+// Query returns a query builder for RoadMap.
+func (c *RoadMapClient) Query() *RoadMapQuery {
+	return &RoadMapQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRoadMap},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RoadMap entity by its id.
+func (c *RoadMapClient) Get(ctx context.Context, id int) (*RoadMap, error) {
+	return c.Query().Where(roadmap.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RoadMapClient) GetX(ctx context.Context, id int) *RoadMap {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryAuthor queries the author edge of a RoadMap.
+func (c *RoadMapClient) QueryAuthor(rm *RoadMap) *MentorQuery {
+	query := (&MentorClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(roadmap.Table, roadmap.FieldID, id),
+			sqlgraph.To(mentor.Table, mentor.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, roadmap.AuthorTable, roadmap.AuthorColumn),
+		)
+		schemaConfig := rm.schemaConfig
+		step.To.Schema = schemaConfig.Mentor
+		step.Edge.Schema = schemaConfig.RoadMap
+		fromV = sqlgraph.Neighbors(rm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RoadMapClient) Hooks() []Hook {
+	return c.hooks.RoadMap
+}
+
+// Interceptors returns the client interceptors.
+func (c *RoadMapClient) Interceptors() []Interceptor {
+	return c.inters.RoadMap
+}
+
+func (c *RoadMapClient) mutate(ctx context.Context, m *RoadMapMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RoadMapCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RoadMapUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RoadMapUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RoadMapDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RoadMap mutation op: %q", m.Op())
+	}
+}
+
+// SkillClient is a client for the Skill schema.
+type SkillClient struct {
+	config
+}
+
+// NewSkillClient returns a client for the Skill from the given config.
+func NewSkillClient(c config) *SkillClient {
+	return &SkillClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `skill.Hooks(f(g(h())))`.
+func (c *SkillClient) Use(hooks ...Hook) {
+	c.hooks.Skill = append(c.hooks.Skill, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `skill.Intercept(f(g(h())))`.
+func (c *SkillClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Skill = append(c.inters.Skill, interceptors...)
+}
+
+// Create returns a builder for creating a Skill entity.
+func (c *SkillClient) Create() *SkillCreate {
+	mutation := newSkillMutation(c.config, OpCreate)
+	return &SkillCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Skill entities.
+func (c *SkillClient) CreateBulk(builders ...*SkillCreate) *SkillCreateBulk {
+	return &SkillCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SkillClient) MapCreateBulk(slice any, setFunc func(*SkillCreate, int)) *SkillCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SkillCreateBulk{err: fmt.Errorf("calling to SkillClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SkillCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SkillCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Skill.
+func (c *SkillClient) Update() *SkillUpdate {
+	mutation := newSkillMutation(c.config, OpUpdate)
+	return &SkillUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SkillClient) UpdateOne(s *Skill) *SkillUpdateOne {
+	mutation := newSkillMutation(c.config, OpUpdateOne, withSkill(s))
+	return &SkillUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SkillClient) UpdateOneID(id int) *SkillUpdateOne {
+	mutation := newSkillMutation(c.config, OpUpdateOne, withSkillID(id))
+	return &SkillUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Skill.
+func (c *SkillClient) Delete() *SkillDelete {
+	mutation := newSkillMutation(c.config, OpDelete)
+	return &SkillDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SkillClient) DeleteOne(s *Skill) *SkillDeleteOne {
+	return c.DeleteOneID(s.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SkillClient) DeleteOneID(id int) *SkillDeleteOne {
+	builder := c.Delete().Where(skill.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SkillDeleteOne{builder}
+}
+
+// Query returns a query builder for Skill.
+func (c *SkillClient) Query() *SkillQuery {
+	return &SkillQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSkill},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Skill entity by its id.
+func (c *SkillClient) Get(ctx context.Context, id int) (*Skill, error) {
+	return c.Query().Where(skill.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SkillClient) GetX(ctx context.Context, id int) *Skill {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Skill.
+func (c *SkillClient) QueryUser(s *Skill) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(skill.Table, skill.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, skill.UserTable, skill.UserColumn),
+		)
+		schemaConfig := s.schemaConfig
+		step.To.Schema = schemaConfig.User
+		step.Edge.Schema = schemaConfig.Skill
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SkillClient) Hooks() []Hook {
+	return c.hooks.Skill
+}
+
+// Interceptors returns the client interceptors.
+func (c *SkillClient) Interceptors() []Interceptor {
+	return c.inters.Skill
+}
+
+func (c *SkillClient) mutate(ctx context.Context, m *SkillMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SkillCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SkillUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SkillUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SkillDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Skill mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1289,6 +1611,25 @@ func (c *UserClient) QueryMentor(u *User) *MentorQuery {
 	return query
 }
 
+// QuerySkills queries the skills edge of a User.
+func (c *UserClient) QuerySkills(u *User) *SkillQuery {
+	query := (&SkillClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(skill.Table, skill.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SkillsTable, user.SkillsColumn),
+		)
+		schemaConfig := u.schemaConfig
+		step.To.Schema = schemaConfig.Skill
+		step.Edge.Schema = schemaConfig.Skill
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -1317,10 +1658,11 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Match, Menti, Mentor, Message, RealExperience, User []ent.Hook
+		Match, Menti, Mentor, Message, RealExperience, RoadMap, Skill, User []ent.Hook
 	}
 	inters struct {
-		Match, Menti, Mentor, Message, RealExperience, User []ent.Interceptor
+		Match, Menti, Mentor, Message, RealExperience, RoadMap, Skill,
+		User []ent.Interceptor
 	}
 )
 

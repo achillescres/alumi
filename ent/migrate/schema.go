@@ -124,10 +124,59 @@ var (
 			},
 		},
 	}
+	// RoadMapsColumns holds the columns for the "road_maps" table.
+	RoadMapsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "tags", Type: field.TypeJSON},
+		{Name: "text", Type: field.TypeString, Size: 2147483647},
+		{Name: "road_map_author", Type: field.TypeInt},
+	}
+	// RoadMapsTable holds the schema information for the "road_maps" table.
+	RoadMapsTable = &schema.Table{
+		Name:       "road_maps",
+		Columns:    RoadMapsColumns,
+		PrimaryKey: []*schema.Column{RoadMapsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "road_maps_mentors_author",
+				Columns:    []*schema.Column{RoadMapsColumns[4]},
+				RefColumns: []*schema.Column{MentorsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// SkillsColumns holds the columns for the "skills" table.
+	SkillsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "skill_user", Type: field.TypeInt},
+		{Name: "user_skills", Type: field.TypeInt, Nullable: true},
+	}
+	// SkillsTable holds the schema information for the "skills" table.
+	SkillsTable = &schema.Table{
+		Name:       "skills",
+		Columns:    SkillsColumns,
+		PrimaryKey: []*schema.Column{SkillsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "skills_users_user",
+				Columns:    []*schema.Column{SkillsColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "skills_users_skills",
+				Columns:    []*schema.Column{SkillsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "login", Type: field.TypeString},
+		{Name: "login", Type: field.TypeString, Unique: true},
 		{Name: "hashed_password", Type: field.TypeString},
 		{Name: "email", Type: field.TypeString},
 		{Name: "bio", Type: field.TypeString},
@@ -135,7 +184,6 @@ var (
 		{Name: "phone", Type: field.TypeString, Nullable: true},
 		{Name: "telegram", Type: field.TypeString, Nullable: true},
 		{Name: "other_contacts", Type: field.TypeString, Nullable: true},
-		{Name: "skills", Type: field.TypeJSON},
 		{Name: "type", Type: field.TypeEnum, Enums: []string{"menti", "mentor"}},
 		{Name: "user_menti", Type: field.TypeInt, Nullable: true},
 		{Name: "user_mentor", Type: field.TypeInt, Nullable: true},
@@ -148,13 +196,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "users_mentis_menti",
-				Columns:    []*schema.Column{UsersColumns[11]},
+				Columns:    []*schema.Column{UsersColumns[10]},
 				RefColumns: []*schema.Column{MentisColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "users_mentors_mentor",
-				Columns:    []*schema.Column{UsersColumns[12]},
+				Columns:    []*schema.Column{UsersColumns[11]},
 				RefColumns: []*schema.Column{MentorsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -167,6 +215,8 @@ var (
 		MentorsTable,
 		MessagesTable,
 		RealExperiencesTable,
+		RoadMapsTable,
+		SkillsTable,
 		UsersTable,
 	}
 )
@@ -177,6 +227,9 @@ func init() {
 	MessagesTable.ForeignKeys[0].RefTable = UsersTable
 	MessagesTable.ForeignKeys[1].RefTable = MatchesTable
 	RealExperiencesTable.ForeignKeys[0].RefTable = UsersTable
+	RoadMapsTable.ForeignKeys[0].RefTable = MentorsTable
+	SkillsTable.ForeignKeys[0].RefTable = UsersTable
+	SkillsTable.ForeignKeys[1].RefTable = UsersTable
 	UsersTable.ForeignKeys[0].RefTable = MentisTable
 	UsersTable.ForeignKeys[1].RefTable = MentorsTable
 }

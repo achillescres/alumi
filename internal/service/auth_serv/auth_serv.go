@@ -20,16 +20,17 @@ func New(c *ent.Client, hasher passlib.HashManager, jwt ajwt.JWTManager) *Auth {
 	return &Auth{c: c, hasher: hasher, jwt: jwt}
 }
 
-func (a *Auth) Check(ctx context.Context, jwt string) error {
+func (a *Auth) Check(ctx context.Context, jwt string) (*ent.User, error) {
 	ew := utils.NewErrorWrapper("Auth - Check")
 
-	u, err := a.jwt.ParseUser(jwt)
+	jwtClaims, err := a.jwt.ParseUser(jwt)
 	if err != nil {
-		return ew(fmt.Errorf("parse user from jwt: %w", err))
+		return nil, ew(fmt.Errorf("parse user from jwt: %w", err))
 	}
-	if _, err := a.c.User.Query().Where(user.Login(u.Login)).Only(ctx); err != nil {
-		return ew(fmt.Errorf("query user: %w", err))
+	u, err := a.c.User.Query().Where(user.Login(jwtClaims.Login)).Only(ctx)
+	if err != nil {
+		return nil, ew(fmt.Errorf("query user: %w", err))
 	}
 
-	return nil
+	return u, nil
 }

@@ -12,7 +12,7 @@ build:
 	go build cmd/app/main.go
 
 run:
-	PROJECT_ABS_PATH=" ENV_FILE_PATH="./.env" go run cmd/app/main.go
+	PROJECT_ABS_PATH="/Users/achillescres/petprojects/itamconnect" ENV_FILE_PATH="./.env" go run cmd/app/main.go
 
 rapi:
 	go run cmd/rawapi/rawapi.go

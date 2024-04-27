@@ -22,6 +22,10 @@ type Tx struct {
 	Message *MessageClient
 	// RealExperience is the client for interacting with the RealExperience builders.
 	RealExperience *RealExperienceClient
+	// RoadMap is the client for interacting with the RoadMap builders.
+	RoadMap *RoadMapClient
+	// Skill is the client for interacting with the Skill builders.
+	Skill *SkillClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -160,6 +164,8 @@ func (tx *Tx) init() {
 	tx.Mentor = NewMentorClient(tx.config)
 	tx.Message = NewMessageClient(tx.config)
 	tx.RealExperience = NewRealExperienceClient(tx.config)
+	tx.RoadMap = NewRoadMapClient(tx.config)
+	tx.Skill = NewSkillClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"itamconnect/ent/menti"
 	"itamconnect/ent/mentor"
@@ -36,8 +35,6 @@ type User struct {
 	Telegram string `json:"telegram,omitempty"`
 	// OtherContacts holds the value of the "other_contacts" field.
 	OtherContacts string `json:"other_contacts,omitempty"`
-	// Skills holds the value of the "skills" field.
-	Skills []string `json:"skills,omitempty"`
 	// Type holds the value of the "type" field.
 	Type valueobject.UserType `json:"type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -56,9 +53,11 @@ type UserEdges struct {
 	Menti *Menti `json:"menti,omitempty"`
 	// Mentor holds the value of the mentor edge.
 	Mentor *Mentor `json:"mentor,omitempty"`
+	// Skills holds the value of the skills edge.
+	Skills []*Skill `json:"skills,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // RealExperiencesOrErr returns the RealExperiences value or an error if the edge
@@ -92,13 +91,20 @@ func (e UserEdges) MentorOrErr() (*Mentor, error) {
 	return nil, &NotLoadedError{edge: "mentor"}
 }
 
+// SkillsOrErr returns the Skills value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SkillsOrErr() ([]*Skill, error) {
+	if e.loadedTypes[3] {
+		return e.Skills, nil
+	}
+	return nil, &NotLoadedError{edge: "skills"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldSkills:
-			values[i] = new([]byte)
 		case user.FieldID:
 			values[i] = new(sql.NullInt64)
 		case user.FieldLogin, user.FieldHashedPassword, user.FieldEmail, user.FieldBio, user.FieldEducationInfo, user.FieldPhone, user.FieldTelegram, user.FieldOtherContacts, user.FieldType:
@@ -176,14 +182,6 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.OtherContacts = value.String
 			}
-		case user.FieldSkills:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field skills", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &u.Skills); err != nil {
-					return fmt.Errorf("unmarshal field skills: %w", err)
-				}
-			}
 		case user.FieldType:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
@@ -232,6 +230,11 @@ func (u *User) QueryMentor() *MentorQuery {
 	return NewUserClient(u.config).QueryMentor(u)
 }
 
+// QuerySkills queries the "skills" edge of the User entity.
+func (u *User) QuerySkills() *SkillQuery {
+	return NewUserClient(u.config).QuerySkills(u)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -278,9 +281,6 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("other_contacts=")
 	builder.WriteString(u.OtherContacts)
-	builder.WriteString(", ")
-	builder.WriteString("skills=")
-	builder.WriteString(fmt.Sprintf("%v", u.Skills))
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(fmt.Sprintf("%v", u.Type))

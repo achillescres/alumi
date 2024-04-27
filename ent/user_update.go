@@ -11,12 +11,12 @@ import (
 	"itamconnect/ent/mentor"
 	"itamconnect/ent/predicate"
 	"itamconnect/ent/realexperience"
+	"itamconnect/ent/skill"
 	"itamconnect/ent/user"
 	"itamconnect/internal/domain/valueobject"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 )
 
@@ -163,18 +163,6 @@ func (uu *UserUpdate) ClearOtherContacts() *UserUpdate {
 	return uu
 }
 
-// SetSkills sets the "skills" field.
-func (uu *UserUpdate) SetSkills(s []string) *UserUpdate {
-	uu.mutation.SetSkills(s)
-	return uu
-}
-
-// AppendSkills appends s to the "skills" field.
-func (uu *UserUpdate) AppendSkills(s []string) *UserUpdate {
-	uu.mutation.AppendSkills(s)
-	return uu
-}
-
 // SetType sets the "type" field.
 func (uu *UserUpdate) SetType(vt valueobject.UserType) *UserUpdate {
 	uu.mutation.SetType(vt)
@@ -242,6 +230,21 @@ func (uu *UserUpdate) SetMentor(m *Mentor) *UserUpdate {
 	return uu.SetMentorID(m.ID)
 }
 
+// AddSkillIDs adds the "skills" edge to the Skill entity by IDs.
+func (uu *UserUpdate) AddSkillIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddSkillIDs(ids...)
+	return uu
+}
+
+// AddSkills adds the "skills" edges to the Skill entity.
+func (uu *UserUpdate) AddSkills(s ...*Skill) *UserUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uu.AddSkillIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -278,6 +281,27 @@ func (uu *UserUpdate) ClearMenti() *UserUpdate {
 func (uu *UserUpdate) ClearMentor() *UserUpdate {
 	uu.mutation.ClearMentor()
 	return uu
+}
+
+// ClearSkills clears all "skills" edges to the Skill entity.
+func (uu *UserUpdate) ClearSkills() *UserUpdate {
+	uu.mutation.ClearSkills()
+	return uu
+}
+
+// RemoveSkillIDs removes the "skills" edge to Skill entities by IDs.
+func (uu *UserUpdate) RemoveSkillIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveSkillIDs(ids...)
+	return uu
+}
+
+// RemoveSkills removes "skills" edges to Skill entities.
+func (uu *UserUpdate) RemoveSkills(s ...*Skill) *UserUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uu.RemoveSkillIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -366,14 +390,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if uu.mutation.OtherContactsCleared() {
 		_spec.ClearField(user.FieldOtherContacts, field.TypeString)
-	}
-	if value, ok := uu.mutation.Skills(); ok {
-		_spec.SetField(user.FieldSkills, field.TypeJSON, value)
-	}
-	if value, ok := uu.mutation.AppendedSkills(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, user.FieldSkills, value)
-		})
 	}
 	if value, ok := uu.mutation.GetType(); ok {
 		_spec.SetField(user.FieldType, field.TypeEnum, value)
@@ -483,6 +499,54 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			},
 		}
 		edge.Schema = uu.schemaConfig.User
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.SkillsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uu.schemaConfig.Skill
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedSkillsIDs(); len(nodes) > 0 && !uu.mutation.SkillsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uu.schemaConfig.Skill
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.SkillsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uu.schemaConfig.Skill
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
@@ -640,18 +704,6 @@ func (uuo *UserUpdateOne) ClearOtherContacts() *UserUpdateOne {
 	return uuo
 }
 
-// SetSkills sets the "skills" field.
-func (uuo *UserUpdateOne) SetSkills(s []string) *UserUpdateOne {
-	uuo.mutation.SetSkills(s)
-	return uuo
-}
-
-// AppendSkills appends s to the "skills" field.
-func (uuo *UserUpdateOne) AppendSkills(s []string) *UserUpdateOne {
-	uuo.mutation.AppendSkills(s)
-	return uuo
-}
-
 // SetType sets the "type" field.
 func (uuo *UserUpdateOne) SetType(vt valueobject.UserType) *UserUpdateOne {
 	uuo.mutation.SetType(vt)
@@ -719,6 +771,21 @@ func (uuo *UserUpdateOne) SetMentor(m *Mentor) *UserUpdateOne {
 	return uuo.SetMentorID(m.ID)
 }
 
+// AddSkillIDs adds the "skills" edge to the Skill entity by IDs.
+func (uuo *UserUpdateOne) AddSkillIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddSkillIDs(ids...)
+	return uuo
+}
+
+// AddSkills adds the "skills" edges to the Skill entity.
+func (uuo *UserUpdateOne) AddSkills(s ...*Skill) *UserUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uuo.AddSkillIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
@@ -755,6 +822,27 @@ func (uuo *UserUpdateOne) ClearMenti() *UserUpdateOne {
 func (uuo *UserUpdateOne) ClearMentor() *UserUpdateOne {
 	uuo.mutation.ClearMentor()
 	return uuo
+}
+
+// ClearSkills clears all "skills" edges to the Skill entity.
+func (uuo *UserUpdateOne) ClearSkills() *UserUpdateOne {
+	uuo.mutation.ClearSkills()
+	return uuo
+}
+
+// RemoveSkillIDs removes the "skills" edge to Skill entities by IDs.
+func (uuo *UserUpdateOne) RemoveSkillIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveSkillIDs(ids...)
+	return uuo
+}
+
+// RemoveSkills removes "skills" edges to Skill entities.
+func (uuo *UserUpdateOne) RemoveSkills(s ...*Skill) *UserUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uuo.RemoveSkillIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -874,14 +962,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if uuo.mutation.OtherContactsCleared() {
 		_spec.ClearField(user.FieldOtherContacts, field.TypeString)
 	}
-	if value, ok := uuo.mutation.Skills(); ok {
-		_spec.SetField(user.FieldSkills, field.TypeJSON, value)
-	}
-	if value, ok := uuo.mutation.AppendedSkills(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, user.FieldSkills, value)
-		})
-	}
 	if value, ok := uuo.mutation.GetType(); ok {
 		_spec.SetField(user.FieldType, field.TypeEnum, value)
 	}
@@ -990,6 +1070,54 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			},
 		}
 		edge.Schema = uuo.schemaConfig.User
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.SkillsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uuo.schemaConfig.Skill
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedSkillsIDs(); len(nodes) > 0 && !uuo.mutation.SkillsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uuo.schemaConfig.Skill
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.SkillsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uuo.schemaConfig.Skill
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}

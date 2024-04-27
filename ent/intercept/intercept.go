@@ -12,6 +12,8 @@ import (
 	"itamconnect/ent/message"
 	"itamconnect/ent/predicate"
 	"itamconnect/ent/realexperience"
+	"itamconnect/ent/roadmap"
+	"itamconnect/ent/skill"
 	"itamconnect/ent/user"
 
 	"entgo.io/ent/dialect/sql"
@@ -208,6 +210,60 @@ func (f TraverseRealExperience) Traverse(ctx context.Context, q ent.Query) error
 	return fmt.Errorf("unexpected query type %T. expect *ent.RealExperienceQuery", q)
 }
 
+// The RoadMapFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RoadMapFunc func(context.Context, *ent.RoadMapQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RoadMapFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RoadMapQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RoadMapQuery", q)
+}
+
+// The TraverseRoadMap type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRoadMap func(context.Context, *ent.RoadMapQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRoadMap) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRoadMap) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RoadMapQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RoadMapQuery", q)
+}
+
+// The SkillFunc type is an adapter to allow the use of ordinary function as a Querier.
+type SkillFunc func(context.Context, *ent.SkillQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f SkillFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.SkillQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.SkillQuery", q)
+}
+
+// The TraverseSkill type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseSkill func(context.Context, *ent.SkillQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseSkill) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseSkill) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.SkillQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.SkillQuery", q)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserFunc func(context.Context, *ent.UserQuery) (ent.Value, error)
 
@@ -248,6 +304,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.MessageQuery, predicate.Message, message.OrderOption]{typ: ent.TypeMessage, tq: q}, nil
 	case *ent.RealExperienceQuery:
 		return &query[*ent.RealExperienceQuery, predicate.RealExperience, realexperience.OrderOption]{typ: ent.TypeRealExperience, tq: q}, nil
+	case *ent.RoadMapQuery:
+		return &query[*ent.RoadMapQuery, predicate.RoadMap, roadmap.OrderOption]{typ: ent.TypeRoadMap, tq: q}, nil
+	case *ent.SkillQuery:
+		return &query[*ent.SkillQuery, predicate.Skill, skill.OrderOption]{typ: ent.TypeSkill, tq: q}, nil
 	case *ent.UserQuery:
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
 	default:

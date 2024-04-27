@@ -31,8 +31,6 @@ const (
 	FieldTelegram = "telegram"
 	// FieldOtherContacts holds the string denoting the other_contacts field in the database.
 	FieldOtherContacts = "other_contacts"
-	// FieldSkills holds the string denoting the skills field in the database.
-	FieldSkills = "skills"
 	// FieldType holds the string denoting the type field in the database.
 	FieldType = "type"
 	// EdgeRealExperiences holds the string denoting the real_experiences edge name in mutations.
@@ -41,6 +39,8 @@ const (
 	EdgeMenti = "menti"
 	// EdgeMentor holds the string denoting the mentor edge name in mutations.
 	EdgeMentor = "mentor"
+	// EdgeSkills holds the string denoting the skills edge name in mutations.
+	EdgeSkills = "skills"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// RealExperiencesTable is the table that holds the real_experiences relation/edge.
@@ -64,6 +64,13 @@ const (
 	MentorInverseTable = "mentors"
 	// MentorColumn is the table column denoting the mentor relation/edge.
 	MentorColumn = "user_mentor"
+	// SkillsTable is the table that holds the skills relation/edge.
+	SkillsTable = "skills"
+	// SkillsInverseTable is the table name for the Skill entity.
+	// It exists in this package in order to avoid circular dependency with the "skill" package.
+	SkillsInverseTable = "skills"
+	// SkillsColumn is the table column denoting the skills relation/edge.
+	SkillsColumn = "user_skills"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -77,7 +84,6 @@ var Columns = []string{
 	FieldPhone,
 	FieldTelegram,
 	FieldOtherContacts,
-	FieldSkills,
 	FieldType,
 }
 
@@ -193,6 +199,20 @@ func ByMentorField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newMentorStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// BySkillsCount orders the results by skills count.
+func BySkillsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSkillsStep(), opts...)
+	}
+}
+
+// BySkills orders the results by skills terms.
+func BySkills(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSkillsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newRealExperiencesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -212,5 +232,12 @@ func newMentorStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MentorInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, MentorTable, MentorColumn),
+	)
+}
+func newSkillsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SkillsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SkillsTable, SkillsColumn),
 	)
 }

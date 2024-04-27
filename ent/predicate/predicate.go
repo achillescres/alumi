@@ -21,5 +21,11 @@ type Message func(*sql.Selector)
 // RealExperience is the predicate function for realexperience builders.
 type RealExperience func(*sql.Selector)
 
+// RoadMap is the predicate function for roadmap builders.
+type RoadMap func(*sql.Selector)
+
+// Skill is the predicate function for skill builders.
+type Skill func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)

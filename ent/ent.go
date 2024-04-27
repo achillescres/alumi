@@ -11,6 +11,8 @@ import (
 	"itamconnect/ent/mentor"
 	"itamconnect/ent/message"
 	"itamconnect/ent/realexperience"
+	"itamconnect/ent/roadmap"
+	"itamconnect/ent/skill"
 	"itamconnect/ent/user"
 	"reflect"
 	"sync"
@@ -83,6 +85,8 @@ func checkColumn(table, column string) error {
 			mentor.Table:         mentor.ValidColumn,
 			message.Table:        message.ValidColumn,
 			realexperience.Table: realexperience.ValidColumn,
+			roadmap.Table:        roadmap.ValidColumn,
+			skill.Table:          skill.ValidColumn,
 			user.Table:           user.ValidColumn,
 		})
 	})

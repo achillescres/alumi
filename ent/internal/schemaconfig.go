@@ -12,6 +12,8 @@ type SchemaConfig struct {
 	Mentor         string // Mentor table.
 	Message        string // Message table.
 	RealExperience string // RealExperience table.
+	RoadMap        string // RoadMap table.
+	Skill          string // Skill table.
 	User           string // User table.
 }
 

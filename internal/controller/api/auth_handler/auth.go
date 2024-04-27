@@ -49,17 +49,5 @@ func (ah *AuthHandler) Login(c *gin.Context) {
 }
 
 func (ah *AuthHandler) Check(c *gin.Context) {
-	jwt, err := c.Cookie("Access")
-	if err != nil {
-		ah.log.Errorln(err)
-		ginresponse.ErrorString(c, http.StatusUnprocessableEntity, err, "need Access cookie to check")
-		return
-	}
-	if err := ah.authServ.Check(c, jwt); err != nil {
-		ah.log.Errorln(err)
-		ginresponse.ErrorString(c, http.StatusUnauthorized, err, "invalid jwt")
-		return
-	}
 
-	c.String(http.StatusOK, "ok")
 }

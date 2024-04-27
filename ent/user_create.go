@@ -9,6 +9,7 @@ import (
 	"itamconnect/ent/menti"
 	"itamconnect/ent/mentor"
 	"itamconnect/ent/realexperience"
+	"itamconnect/ent/skill"
 	"itamconnect/ent/user"
 	"itamconnect/internal/domain/valueobject"
 
@@ -97,12 +98,6 @@ func (uc *UserCreate) SetNillableOtherContacts(s *string) *UserCreate {
 	return uc
 }
 
-// SetSkills sets the "skills" field.
-func (uc *UserCreate) SetSkills(s []string) *UserCreate {
-	uc.mutation.SetSkills(s)
-	return uc
-}
-
 // SetType sets the "type" field.
 func (uc *UserCreate) SetType(vt valueobject.UserType) *UserCreate {
 	uc.mutation.SetType(vt)
@@ -162,6 +157,21 @@ func (uc *UserCreate) SetMentor(m *Mentor) *UserCreate {
 	return uc.SetMentorID(m.ID)
 }
 
+// AddSkillIDs adds the "skills" edge to the Skill entity by IDs.
+func (uc *UserCreate) AddSkillIDs(ids ...int) *UserCreate {
+	uc.mutation.AddSkillIDs(ids...)
+	return uc
+}
+
+// AddSkills adds the "skills" edges to the Skill entity.
+func (uc *UserCreate) AddSkills(s ...*Skill) *UserCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uc.AddSkillIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -216,9 +226,6 @@ func (uc *UserCreate) check() error {
 	if _, ok := uc.mutation.EducationInfo(); !ok {
 		return &ValidationError{Name: "education_info", err: errors.New(`ent: missing required field "User.education_info"`)}
 	}
-	if _, ok := uc.mutation.Skills(); !ok {
-		return &ValidationError{Name: "skills", err: errors.New(`ent: missing required field "User.skills"`)}
-	}
 	if _, ok := uc.mutation.GetType(); !ok {
 		return &ValidationError{Name: "type", err: errors.New(`ent: missing required field "User.type"`)}
 	}
@@ -226,6 +233,9 @@ func (uc *UserCreate) check() error {
 		if err := user.TypeValidator(v); err != nil {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "User.type": %w`, err)}
 		}
+	}
+	if len(uc.mutation.SkillsIDs()) == 0 {
+		return &ValidationError{Name: "skills", err: errors.New(`ent: missing required edge "User.skills"`)}
 	}
 	return nil
 }
@@ -287,10 +297,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldOtherContacts, field.TypeString, value)
 		_node.OtherContacts = value
 	}
-	if value, ok := uc.mutation.Skills(); ok {
-		_spec.SetField(user.FieldSkills, field.TypeJSON, value)
-		_node.Skills = value
-	}
 	if value, ok := uc.mutation.GetType(); ok {
 		_spec.SetField(user.FieldType, field.TypeEnum, value)
 		_node.Type = value
@@ -346,6 +352,23 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_mentor = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.SkillsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SkillsTable,
+			Columns: []string{user.SkillsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(skill.FieldID, field.TypeInt),
+			},
+		}
+		edge.Schema = uc.schemaConfig.Skill
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -511,18 +534,6 @@ func (u *UserUpsert) UpdateOtherContacts() *UserUpsert {
 // ClearOtherContacts clears the value of the "other_contacts" field.
 func (u *UserUpsert) ClearOtherContacts() *UserUpsert {
 	u.SetNull(user.FieldOtherContacts)
-	return u
-}
-
-// SetSkills sets the "skills" field.
-func (u *UserUpsert) SetSkills(v []string) *UserUpsert {
-	u.Set(user.FieldSkills, v)
-	return u
-}
-
-// UpdateSkills sets the "skills" field to the value that was provided on create.
-func (u *UserUpsert) UpdateSkills() *UserUpsert {
-	u.SetExcluded(user.FieldSkills)
 	return u
 }
 
@@ -708,20 +719,6 @@ func (u *UserUpsertOne) UpdateOtherContacts() *UserUpsertOne {
 func (u *UserUpsertOne) ClearOtherContacts() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearOtherContacts()
-	})
-}
-
-// SetSkills sets the "skills" field.
-func (u *UserUpsertOne) SetSkills(v []string) *UserUpsertOne {
-	return u.Update(func(s *UserUpsert) {
-		s.SetSkills(v)
-	})
-}
-
-// UpdateSkills sets the "skills" field to the value that was provided on create.
-func (u *UserUpsertOne) UpdateSkills() *UserUpsertOne {
-	return u.Update(func(s *UserUpsert) {
-		s.UpdateSkills()
 	})
 }
 
@@ -1072,20 +1069,6 @@ func (u *UserUpsertBulk) UpdateOtherContacts() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearOtherContacts() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearOtherContacts()
-	})
-}
-
-// SetSkills sets the "skills" field.
-func (u *UserUpsertBulk) SetSkills(v []string) *UserUpsertBulk {
-	return u.Update(func(s *UserUpsert) {
-		s.SetSkills(v)
-	})
-}
-
-// UpdateSkills sets the "skills" field to the value that was provided on create.
-func (u *UserUpsertBulk) UpdateSkills() *UserUpsertBulk {
-	return u.Update(func(s *UserUpsert) {
-		s.UpdateSkills()
 	})
 }
 
