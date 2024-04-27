@@ -20,7 +20,7 @@ func New(authServ *auth_serv.Auth, log *logrus.Entry) *AuthHandler {
 func (ah *AuthHandler) RegisterHandler(r *gin.RouterGroup) {
 	r.POST("/register", ah.Register)
 	r.POST("/login", ah.Login)
-	r.POST("/check", ah.Check)
+	r.POST("/check", ah.AuthorizationMiddleware, ah.Check)
 }
 
 func (ah *AuthHandler) Register(c *gin.Context) {
@@ -29,6 +29,12 @@ func (ah *AuthHandler) Register(c *gin.Context) {
 	if err != nil {
 		ah.log.Errorln(err)
 		ginresponse.ErrorString(c, http.StatusUnprocessableEntity, err, "invalid body")
+		return
+	}
+	err = ah.authServ.Register(c, regInput)
+	if err != nil {
+		ah.log.Errorln(err)
+		ginresponse.ErrorString(c, http.StatusInternalServerError, err, err.Error())
 		return
 	}
 

@@ -11,8 +11,8 @@ import (
 var ErrInvalidLogin = errors.New("invalid login")
 
 type Login struct {
-	Login    string
-	Password string
+	Login    string `json:"login" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (a *Auth) Login(ctx context.Context, l Login) (string, error) {
