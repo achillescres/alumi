@@ -234,9 +234,6 @@ func (uc *UserCreate) check() error {
 			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "User.type": %w`, err)}
 		}
 	}
-	if len(uc.mutation.SkillsIDs()) == 0 {
-		return &ValidationError{Name: "skills", err: errors.New(`ent: missing required edge "User.skills"`)}
-	}
 	return nil
 }
 
