@@ -34,6 +34,9 @@ func (api *API) Run(_ context.Context) error {
 	api.Mentoring.RegisterHandler(apiGroup.Group("/mentoring"))
 
 	err := r.Run(api.Addr)
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+	})
 
 	return ew(fmt.Errorf("run http sever: %w", err))
 }
