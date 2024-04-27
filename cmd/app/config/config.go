@@ -14,16 +14,14 @@ type Config struct {
 	} `env-prefix:"PROJECT_"`
 
 	Postgres struct {
-		Host                  string `env:"HOST" env-required:"true"`
-		Port                  uint   `env:"PORT" env-required:"true"`
-		Username              string `env:"USERNAME" env-required:"true"`
-		Password              string `env:"PASSWORD" env-required:"true"`
-		DbName                string `env:"DB_NAME" env-required:"true"`
-		MaxConnections        uint   `env:"MAX_CONNECTIONS" env-required:"true"`
-		MaxConnectionAttempts uint   `env:"MAX_CONNECTION_ATTEMPTS" env-required:"true"`
-		UseCA                 bool   `env:"USE_CA" env-required:"true"`
-		CaPath                string `env:"CA_PATH" env-required:"true"`
-		CaAbsPath             string
+		Host      string `env:"HOST" env-required:"true"`
+		Port      uint   `env:"PORT" env-required:"true"`
+		Username  string `env:"USERNAME" env-required:"true"`
+		Password  string `env:"PASSWORD" env-required:"true"`
+		DbName    string `env:"DB_NAME" env-required:"true"`
+		UseCA     bool   `env:"USE_CA" env-required:"true"`
+		CaPath    string `env:"CA_PATH" env-required:"true"`
+		CaAbsPath string
 	} `env-prefix:"POSTGRES_"`
 
 	//S3 struct {

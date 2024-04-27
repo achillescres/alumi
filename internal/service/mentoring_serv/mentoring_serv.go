@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"github.com/achillescres/pkg/utils"
 	"itamconnect/ent"
+	"itamconnect/ent/match"
+	"itamconnect/ent/menti"
+	"itamconnect/ent/mentor"
 	"itamconnect/ent/skill"
 	"itamconnect/ent/user"
 	"itamconnect/internal/domain/valueobject"
@@ -16,8 +19,9 @@ type SearchMentorsOpts struct {
 
 type MentoringService interface {
 	GetMentors(ctx context.Context, opts SearchMentorsOpts) ([]*ent.User, error)
-	Request(ctx context.Context, mentiID, mentorID int) error
-	SolveMatch(cx context.Context, mentorID, requestID int, accept bool) error
+	Match(ctx context.Context, mentiID, mentorID int) error
+	SolveMatch(ctx context.Context, mentorID, requestID int, accept bool) error
+	GetMatches(ctx context.Context, user *ent.User) ([]*ent.Match, error)
 }
 
 type mentoringService struct {
@@ -49,8 +53,8 @@ func (m *mentoringService) GetMentors(ctx context.Context, opts SearchMentorsOpt
 	return mentors, nil
 }
 
-func (m *mentoringService) Request(ctx context.Context, mentiID, mentorID int) error {
-	ew := utils.NewErrorWrapper("mentoringService - Request")
+func (m *mentoringService) Match(ctx context.Context, mentiID, mentorID int) error {
+	ew := utils.NewErrorWrapper("mentoringService - Match")
 
 	_, err := m.c.Match.Create().
 		SetMentiID(mentiID).
@@ -85,4 +89,15 @@ func (m *mentoringService) SolveMatch(ctx context.Context, mentorID, matchID int
 	}
 
 	return nil
+}
+
+func (m *mentoringService) GetMatches(ctx context.Context, u *ent.User) ([]*ent.Match, error) {
+	switch u.Type {
+	case valueobject.UserTypeMenti:
+		return m.c.Match.Query().Where(match.HasMentiWith(menti.HasUserWith(user.ID(u.ID)))).All(ctx)
+	case valueobject.UserTypeMentor:
+		return m.c.Match.Query().Where(match.HasMentorWith(mentor.HasUserWith(user.ID(u.ID)))).All(ctx)
+	default:
+		return nil, fmt.Errorf("invalid user type")
+	}
 }

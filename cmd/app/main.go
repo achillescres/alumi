@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/achillescres/pkg/security/ajwt"
 	"github.com/achillescres/pkg/security/passlib"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"itamconnect/cmd/app/config"
 	"itamconnect/ent"

@@ -28,17 +28,33 @@ func (a *Auth) Register(ctx context.Context, r Register) error {
 		return ew(fmt.Errorf("hash password: %w", err))
 	}
 
-	_, err = a.c.User.Create().
+	tx, err := a.c.Tx(ctx)
+	if err != nil {
+		return ew(fmt.Errorf("begin tx: %w", err))
+	}
+	defer tx.Rollback()
+
+	u, err := tx.User.Create().
 		SetLogin(r.Login).SetHashedPassword(hashedPass).
 		SetEmail(r.Email).
 		SetBio(r.Bio).
 		SetEducationInfo(r.EducationInfo).
 		SetPhone(r.Phone).SetTelegram(r.Telegram).SetOtherContacts(r.OtherContacts).
-		SetSkills(r.Skills).
 		SetType(r.Type).
 		Save(ctx)
 	if err != nil {
 		return ew(fmt.Errorf("create user: %w", err))
+	}
+
+	for _, sk := range r.Skills {
+		err := tx.Skill.Create().SetName(sk).SetUser(u).Exec(ctx)
+		if err != nil {
+			return ew(fmt.Errorf("cerate skill: %w", err))
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return ew(fmt.Errorf("commit tx: %w", err))
 	}
 
 	return nil

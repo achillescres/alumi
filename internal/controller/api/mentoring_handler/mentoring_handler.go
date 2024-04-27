@@ -20,6 +20,9 @@ type MentoringHandler struct {
 
 func (mh *MentoringHandler) RegisterHandler(r *gin.RouterGroup) {
 	r.POST("/mentorsForMe", mh.GetMentorsForMe)
+	r.POST("/request", mh.Request)
+	r.POST("/solveRequest", mh.SolveRequest)
+	r.POST("/matches", mh.GetMatches)
 }
 
 func (mh *MentoringHandler) GetMentorsForMe(c *gin.Context) {
@@ -57,7 +60,7 @@ func (mh *MentoringHandler) Request(c *gin.Context) {
 		return
 	}
 
-	err = mh.ms.Request(c, user.ID, mentorID)
+	err = mh.ms.Match(c, user.ID, mentorID)
 	if err != nil {
 		mh.log.Errorln(err)
 		ginresponse.ErrorString(c, http.StatusInternalServerError, err, err.Error())
@@ -108,4 +111,23 @@ func (mh *MentoringHandler) SolveRequest(c *gin.Context) {
 	}
 
 	c.String(http.StatusOK, "ok")
+}
+
+func (mh *MentoringHandler) GetMatches(c *gin.Context) {
+	user, _ := auth_handler.GetUser(c)
+	if user.Type != valueobject.UserTypeMentor {
+		err := errors.New("only mentors can accept requests")
+		mh.log.Errorln(err)
+		ginresponse.ErrorString(c, http.StatusUnauthorized, err, err.Error())
+		return
+	}
+
+	matches, err := mh.ms.GetMatches(c, user)
+	if err != nil {
+		mh.log.Errorln(err)
+		ginresponse.ErrorString(c, http.StatusInternalServerError, err, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, matches)
 }
